@@ -1,0 +1,38 @@
+# === Rust build artifacts ===
+/target/
+**/*.rs.bk
+
+# === Cargo-related ===
+Cargo.lock        # If you're building a library (not an app)
+# Keep Cargo.lock for binaries (apps); remove above line if it's an app
+
+# === Environment / Secrets ===
+.env
+.env.local
+.env.development
+.env.production
+
+# === IDE / Editor junk ===
+# VSCode
+.vscode/
+# IntelliJ / CLion
+.idea/
+# Sublime / Others
+*.sublime-workspace
+*.sublime-project
+
+# === OS-specific ===
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+desktop.ini
+
+# === Logs & temp ===
+*.log
+tmp/
+*.tmp
+
+# === Docker ===
+/docker-compose.override.yml
+/.docker/
