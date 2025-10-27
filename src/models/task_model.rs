@@ -13,6 +13,7 @@ pub struct Task {
     pub priority: String,
     pub assignee: Option<String>,
     pub due_date: Option<DateTime>,
+    pub created_by: ObjectId,
     #[serde(default = "now")]
     pub created_at: DateTime,
     #[serde(default = "now")]

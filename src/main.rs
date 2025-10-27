@@ -4,6 +4,8 @@ mod models;
 mod controllers;
 mod services;
 mod routes;
+mod middlewares;
+
 
 use dotenvy::dotenv;
 use std::env;
