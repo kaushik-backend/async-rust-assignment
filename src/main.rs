@@ -71,15 +71,18 @@ type Db = Arc<Mutex<Collection<Task>>>;
 async fn main() {
     dotenv().ok();
 
+    // Get MongoDB details from environment
     let uri = env::var("MONGODB_URI").expect("MONGODB_URI must be set");
-    let db_name = env::var("DATABASE_NAME").unwrap_or("async_rust_db".to_string());
+    let db_name = env::var("DATABASE_NAME").unwrap_or_else(|_| "async_rust_db".to_string());
 
+    // Parse Mongo connection
     let client_options = ClientOptions::parse(&uri).await.unwrap();
     let client = Client::with_options(client_options).unwrap();
     let db = client.database(&db_name);
     let collection = db.collection::<Task>("tasks");
     let shared_db = Arc::new(Mutex::new(collection));
 
+    // Define routes
     let app = Router::new()
         .route("/tasks", post(create_task).get(get_tasks))
         .route(
@@ -88,12 +91,20 @@ async fn main() {
         )
         .with_state(shared_db);
 
-    println!("✅ Listening on http://127.0.0.1:3000");
+    // Get port from environment (Render provides PORT)
+    let port: u16 = env::var("PORT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(3000);
 
+    let addr = format!("0.0.0.0:{}", port);
+    println!("Server running on http://{}", addr);
+
+    // Listen on all interfaces (important for Render)
     axum::serve(
-        tokio::net::TcpListener::bind("127.0.0.1:3000")
+        tokio::net::TcpListener::bind(&addr)
             .await
-            .unwrap(),
+            .expect("Failed to bind to address"),
         app,
     )
     .await
