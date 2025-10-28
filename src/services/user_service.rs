@@ -1,15 +1,28 @@
-use crate::models::user_model::{RegisterUser, LoginUser, User};
 use crate::db::UserDb;
+use crate::models::user_model::{LoginUser, RegisterUser, User};
 use bcrypt::{hash, verify, DEFAULT_COST};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
-use jsonwebtoken::{encode, Header, EncodingKey};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
+}
+
+#[derive(Serialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub user: UserResponse,
+}
+
+#[derive(Serialize)]
+pub struct UserResponse {
+    pub id: String,
+    pub name: String,
+    pub email: String,
 }
 
 pub async fn register_user(db: &UserDb, user: RegisterUser) -> Result<User, String> {
@@ -30,7 +43,7 @@ pub async fn register_user(db: &UserDb, user: RegisterUser) -> Result<User, Stri
     Ok(new_user)
 }
 
-pub async fn login_user(db: &UserDb, creds: LoginUser) -> Result<String, String> {
+pub async fn login_user(db: &UserDb, creds: LoginUser) -> Result<LoginResponse, String> {
     let collection = db.lock().await;
     let user = collection
         .find_one(doc! {"email": &creds.email}, None)
@@ -54,8 +67,21 @@ pub async fn login_user(db: &UserDb, creds: LoginUser) -> Result<String, String>
         exp,
     };
 
-    let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_ref()))
-        .map_err(|e| e.to_string())?;
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .map_err(|e| e.to_string())?;
 
-    Ok(token)
+    let user_response = UserResponse {
+        id: user.id.unwrap().to_hex(),
+        name: user.name.clone(),
+        email: user.email.clone(),
+    };
+
+    Ok(LoginResponse {
+        token,
+        user: user_response,
+    })
 }
